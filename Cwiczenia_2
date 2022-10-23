@@ -1,0 +1,60 @@
+--Zad.4 
+--Wyznacz liczbę budynków (tabela: popp, atrybut: f_codedesc, reprezentowane, jako punkty)
+--położonych w odległości mniejszej niż 1000 m od głównych rzek. Budynki spełniające to
+--kryterium zapisz do osobnej tabeli tableB.
+
+SELECT b.* INTO tableB
+FROM majrivers AS r, popp AS b
+WHERE b.f_codedesc='Building'
+AND ST_Contains(ST_Buffer(r.geom, 1000), b.geom)='true';
+
+SELECT * FROM tableB
+
+SELECT COUNT(*) AS liczbaBudynkow FROM tableB --Wyznacz liczbę 
+
+DROP TABLE tableB
+
+
+--Zad.5
+--Utwórz tabelę o nazwie airportsNew. Z tabeli airports do zaimportuj nazwy lotnisk, ich
+--geometrię, a także atrybut elev, reprezentujący wysokość n.p.m.
+
+SELECT name, geom, elev INTO airportsNew FROM airports
+
+SELECT * FROM airportsNew
+
+--a) Znajdź lotnisko, które położone jest najbardziej na zachód i najbardziej na wschód.
+
+SELECT *, ST_X(geom) AS X_coord FROM airportsNew ORDER BY X_coord DESC LIMIT 1 --Punkt najbardziej na wschód 
+SELECT *, ST_X(geom) AS X_coord FROM airportsNew ORDER BY X_coord ASC LIMIT 1 --Punkt najbardziej na zachód
+
+--b) Do tabeli airportsNew dodaj nowy obiekt - lotnisko, które położone jest w punkcie
+--środkowym drogi pomiędzy lotniskami znalezionymi w punkcie a. Lotnisko nazwij airportB.
+--Wysokość n.p.m. przyjmij dowolną
+
+INSERT INTO airportsNew VALUES('airportB', 
+	(SELECT ST_Centroid(ST_ShortestLine(
+		(SELECT geom FROM airportsNew WHERE name='ANNETTE ISLAND'), 
+		(SELECT geom FROM airportsNew WHERE name='ATKA')))), 200)
+
+SELECT *, ST_AsText(geom) FROM airportsNew WHERE name='airportB'
+
+
+--Zad.6
+--Wyznacz pole powierzchni obszaru, który oddalony jest mniej niż 1000 jednostek od najkrótszej
+--linii łączącej jezioro o nazwie ‘Iliamna Lake’ i lotnisko o nazwie „AMBLER”
+
+SELECT ST_Area(ST_Buffer(ST_ShortestLine(l.geom, a.geom), 1000)) AS Area
+FROM lakes AS l, airports AS a
+WHERE l.names='Iliamna Lake' AND a.name='AMBLER'
+
+
+--Zad.7
+--Napisz zapytanie, które zwróci sumaryczne pole powierzchni poligonów reprezentujących
+--poszczególne typy drzew znajdujących się na obszarze tundry i bagien (swamps)
+
+SELECT tr.vegdesc AS type, SUM(ST_Area(tr.geom)) AS totalArea
+FROM tundra AS t, swamp AS s, trees AS tr
+WHERE ST_Contains(t.geom, tr.geom) OR ST_Contains(s.geom, tr.geom)
+GROUP BY type;
+
