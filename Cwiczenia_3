@@ -98,26 +98,3 @@ FROM t2019_kar_railways AS r, t2019_kar_water_lines AS w
 SELECT ST_AsText(geom) FROM T2019_KAR_BRIDGES;
 
 DROP TABLE T2019_KAR_BRIDGES;
-
-
-
-
-
-
-
-
---2 Znajdź ile nowych POI pojawiło się w promieniu 500 m od wyremontowanych lub
---wybudowanych budynków, które znalezione zostały w zadaniu 1. Policz je wg ich kategorii.
-
-
-CREATE TABLE buildingsNew AS(
-SELECT DISTINCT T2019_KAR_BUILDINGS.* 
-FROM T2019_KAR_BUILDINGS LEFT JOIN T2018_KAR_BUILDINGS ON T2019_KAR_BUILDINGS.geom = T2018_KAR_BUILDINGS.geom
-WHERE T2018_KAR_BUILDINGS.geom IS NULL
-);
-
-SELECT T2019_KAR_POI_TABLE.type AS typ_obiektu ,COUNT(DISTINCT T2019_KAR_POI_TABLE.*) AS liczba_obiektow
-FROM buildingsNew,T2019_KAR_POI_TABLE LEFT JOIN T2018_KAR_POI_TABLE ON T2019_KAR_POI_TABLE.geom = T2018_KAR_POI_TABLE.geom
-WHERE T2018_KAR_POI_TABLE.geom IS NULL
-AND ST_Intersects(ST_Buffer(buildingsNew.geom,500),T2019_KAR_POI_TABLE.geom)
-GROUP BY T2019_KAR_POI_TABLE.type
