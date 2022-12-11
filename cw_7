@@ -1,0 +1,66 @@
+--zad.3
+CREATE TABLE tmp_out AS
+SELECT lo_from_bytea(0,
+ST_AsGDALRaster(ST_Union(rast), 'GTiff', ARRAY['COMPRESS=DEFLATE',
+'PREDICTOR=2', 'PZLEVEL=9'])
+) AS loid
+FROM public.uk_250k;
+----------------------------------------------
+SELECT lo_export(loid, 'D:\UK_GeoTIFF.tiff')
+FROM tmp_out;
+----------------------------------------------
+SELECT lo_unlink(loid)
+FROM tmp_out; 
+
+-- Zad.6
+DROP TABLE IF EXISTS uk_lake_district;
+CREATE TABLE public.uk_lake_district AS
+SELECT ST_Clip(a.rast, b.geom, true) AS rast
+FROM public.uk_250k AS a, public.national_parks AS b
+WHERE ST_Intersects(a.rast, b.geom) AND b.id = 1;
+
+--Zad.7
+DROP TABLE IF EXISTS tmp_out;
+CREATE TABLE tmp_out AS
+SELECT lo_from_bytea(0,
+ST_AsGDALRaster(ST_Union(rast), 'GTiff', ARRAY['COMPRESS=DEFLATE',
+'PREDICTOR=2', 'PZLEVEL=9'])
+) AS loid
+FROM public.uk_lake_district;
+----------------------------------------------
+SELECT lo_export(loid, 'D:\UK_lake_district_GeoTIFF.tiff')
+FROM tmp_out;
+----------------------------------------------
+SELECT lo_unlink(loid)
+FROM tmp_out;
+
+--Zad.10
+CREATE TABLE public.sentinel_ndvi AS
+WITH r AS (
+SELECT a.rid,ST_Clip(a.rast, b.geom,true) AS rast
+FROM public.sentinel AS a, public.national_parks AS b
+WHERE ST_Intersects(b.geom,a.rast) AND b.id = 1
+)
+SELECT
+r.rid,ST_MapAlgebra(
+r.rast, 1,
+r.rast, 4,
+'([rast2.val] - [rast1.val]) / ([rast2.val] +
+[rast1.val])::float','32BF'
+) AS rast
+FROM r;
+
+--Zad.11
+DROP TABLE IF EXISTS tmp_out;
+CREATE TABLE tmp_out AS
+SELECT lo_from_bytea(0,
+ST_AsGDALRaster(ST_Union(rast), 'GTiff', ARRAY['COMPRESS=DEFLATE',
+'PREDICTOR=2', 'PZLEVEL=9'])
+) AS loid
+FROM public.sentinel_ndvi;
+----------------------------------------------
+SELECT lo_export(loid, 'D:\Sentinel_NDVI_GeoTIFF.tiff')
+FROM tmp_out;
+----------------------------------------------
+SELECT lo_unlink(loid)
+FROM tmp_out;
